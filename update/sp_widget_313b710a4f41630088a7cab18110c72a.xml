@@ -1,34 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?><record_update table="sp_widget">
     <sp_widget action="INSERT_OR_UPDATE">
         <category>custom</category>
-        <client_script><![CDATA[function(spUtil, spModal) {
+        <client_script><![CDATA[	function($scope,$rootScope) {
 	/* widget controller */
 	var c = this;
-	spUtil.addInfoMessage("Welcome to the Jungle!");
 
-	//c.updateNote();
-
-	//Listen for event selectNote
-	$rootScope.$on('selectNote', function(event, data){
+	$rootScope.$on('selectNote', function(event,data) {
+		console.log("Select Note event received: " + event);
+		console.log("Select Note Data " + data);
 		c.server.get({
 			action: 'getNote',
 			noteID: $rootScope.noteID
-		}).then(function(r){
+		}).then(function(r) {
 			c.data.title = r.data.note.title;
 			c.data.note = r.data.note.note;
 			c.data.noteID = r.data.note.sys_id;
 		});
 	});
 
-	c.updateNote = function(updateType){
+	c.updateNote = function(updateType) {
+		console.log("Update type is: " + updateType);
 		c.server.get({
 			action: 'updateNote',
 			noteID: c.data.noteID,
 			noteBody: c.data.note,
 			noteTitle: c.data.title
-		}).then(function(r){
-			//Server has updated the record now tell list to update
-			$rootScope.$emit('updateNote', r.data.noteID);
+		}).then(function(r) {
+			// When the promise is returned, emit the change
+			if (updateType == 'title' || updateType == 'body') { 
+				//Syntax: $rootScope.$emit(<event>,<any data to be processed by $on>)
+				$rootScope.$emit('updateTitle', r.data); 
+			}
 		});
 	}
 }]]></client_script>
@@ -48,37 +50,41 @@
         <public>false</public>
         <roles/>
         <script><![CDATA[(function() {
-	/* populate the 'data' object */
-	/* e.g., data.table = $sp.getValue('table'); */
 
-	if(input && input.noteID){
+	if (input && input.noteID) {
 		var note = new GlideRecord('x_snc_createnotes_note');
-
-		if(note.get(input.noteID)){
-			if(input.action == 'getNote'){
-				data.note = {};
-				$sp.getRecordValues(data.note, note, "title, note, sys_id");
-			}else if(input.action == 'updateNote'){
-				note.title = input.noteTitle;
-				note.note = input.noteBody;
-				note.update();
+		if (note.get(input.noteID)) {
+			if (input.action == 'getNote') {
+						data.note = {};
+						$sp.getRecordValues(data.note, note, "title, note, sys_id");
+			}
+			else if (input.action == 'updateNote') { 
+				note.title = input.noteTitle; 
+				note.note = input.noteBody; 
+				note.update(); 
+				// Need to update the data object with the new title
+				// and first 20 characters of the note (do not want to write huge
+				// strings to the Notes List widget)
+				data.title = note.getValue('title');
+				data.note = note.getValue('note').slice(0,20);
 			}
 		}
-	} 
-})();]]></script>
+	}
+})();
+]]></script>
         <servicenow>false</servicenow>
         <sys_class_name>sp_widget</sys_class_name>
         <sys_created_by>cfurniss</sys_created_by>
         <sys_created_on>2018-10-11 01:45:08</sys_created_on>
         <sys_id>313b710a4f41630088a7cab18110c72a</sys_id>
-        <sys_mod_count>16</sys_mod_count>
+        <sys_mod_count>27</sys_mod_count>
         <sys_name>Notes Body</sys_name>
         <sys_package display_value="CreateNotes" source="x_snc_createnotes">df5fd9a5090232007f44e1046c8ff69f</sys_package>
         <sys_policy/>
         <sys_scope display_value="CreateNotes">df5fd9a5090232007f44e1046c8ff69f</sys_scope>
         <sys_update_name>sp_widget_313b710a4f41630088a7cab18110c72a</sys_update_name>
         <sys_updated_by>cfurniss</sys_updated_by>
-        <sys_updated_on>2018-10-11 05:30:34</sys_updated_on>
+        <sys_updated_on>2018-10-11 06:26:20</sys_updated_on>
         <template><![CDATA[<!-- AngularJS directive, ng-show is used to show/hide the widget based on whether c.data.noteID has a value. Until a record is selected in the Notes List widget, the Notes Body c.data.noteID property has no value. -->
 <div class="panel panel-default" ng-show="c.data.noteID">
   <div class="panel-heading clearfix">
